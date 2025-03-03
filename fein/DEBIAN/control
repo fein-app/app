@@ -1,0 +1,8 @@
+Package: fein
+Version: 0.0.0
+Section: utils
+Priority: optional
+Architecture: all
+Depends: libgtk-3-0, libblkid1, liblzma5
+Maintainer: Tibor Balogh <btibor@gmx.at>
+Description: A GUI to run pretrained models.
