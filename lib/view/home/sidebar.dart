@@ -1,3 +1,4 @@
+import 'package:fein_app/fein.dart';
 import 'package:fein_app/states/chat_state.dart';
 import 'package:fein_app/states/model_state.dart';
 import 'package:fein_app/view/account.dart';
@@ -11,9 +12,9 @@ class Sidebar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String model = context.watch<ModelState>().currentModel;
+    Model model = context.watch<ModelState>().currentModel;
     String currChat = context.watch<ChatState>().currentChat;
-    List<String> currentModels = context.watch<ModelState>().currentModels;
+    List<Model> currentModels = context.watch<ModelState>().currentModels;
     final chatProvider = Provider.of<ChatState>(context);
 
     return Drawer(
@@ -32,7 +33,7 @@ class Sidebar extends StatelessWidget {
               ),
               child: DropdownButton<String>(
                 borderRadius: BorderRadius.circular(8), 
-                value: model,
+                value: model.name,
                 hint: Center(
                   child: Text(
                     "Switch the model",
@@ -46,10 +47,10 @@ class Sidebar extends StatelessWidget {
                 },
                 items: currentModels.map<DropdownMenuItem<String>>((model) {
                   return DropdownMenuItem<String>(
-                    value: model,
+                    value: model.name,
                     child: Center(
                       child: Text(
-                        model,
+                        model.name,
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -68,7 +69,7 @@ class Sidebar extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: ElevatedButton.icon(
                 onPressed: () {
-                  chatProvider.changeChat(model, "new");
+                  chatProvider.changeChat(model.name, "new");
                   chatProvider.killResponse();
                 },
                 style: ElevatedButton.styleFrom(
@@ -111,7 +112,7 @@ class Sidebar extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                     ),
                     onPressed: () {
-                      chatProvider.changeChat(model, chat);
+                      chatProvider.changeChat(model.name, chat);
                       chatProvider.killResponse();
                     },
                     child: Row(
@@ -127,7 +128,7 @@ class Sidebar extends StatelessWidget {
                         IconButton(
                           icon: const Icon(Icons.delete, color: Colors.white70),
                           onPressed: () {
-                            chatProvider.deleteChat(model, chat);
+                            chatProvider.deleteChat(model.name, chat);
                           },
                         ),
                       ],

@@ -20,7 +20,7 @@ class ChatState extends ChangeNotifier {
   }
   
   Future<void> _initialize() async {
-    currentChats = await ChatsStore().getChats("DeepSeek-R1");
+    currentChats = await ChatsStore().getChats("DeepSeek-R1-Distill-Llama-8B-GGUF");
     notifyListeners();
   }
   
@@ -69,7 +69,7 @@ class ChatState extends ChangeNotifier {
       StreamSubscription<String>? subscription;
       
       try {
-        Stream<String> responseStream = Model().generateResponse(uri, currentMessagesFromChat, prompt);
+        Stream<String> responseStream = ModelExecUtils().generateResponse(uri, currentMessagesFromChat, prompt);
         bool hasError = false;
         Completer<void> streamDone = Completer<void>();
         
@@ -93,11 +93,7 @@ class ChatState extends ChangeNotifier {
           },
           onDone: () async {
             if (!kill) {
-              Message newMessage = Message(
-                sender: false,
-                date: DateTime.now(),
-                message: buffer.toString(),
-              );
+              Message newMessage = Message.fromBuffer(buffer.toString());
               
               await appendMessage(model, newMessage);
               kill = false;

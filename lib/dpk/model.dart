@@ -5,70 +5,68 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:async';
 
+class ModelExecUtils {
 
-class Model {
-Stream<String> generateResponse(Uri uri, List<Message> messages, String prompt) async* {
-  try {
-    final request = http.Request('POST', uri);
-    request.headers['Content-Type'] = 'application/json';
-    request.body = jsonEncode({
-      'messages': [
-        {"role": "user", "content": prompt}
-      ],
-      'max_tokens': 4097,
-      'temperature': 1.0,
-      'stream': true
-    });
-    
-    final streamedResponse = await request.send();
-    
-    if (streamedResponse.statusCode == 200) {
-      String buffer = "";
+  Stream<String> generateResponse(Uri uri, List<Message> messages, String prompt) async* {
+    try {
+      final request = http.Request('POST', uri);
+      request.headers['Content-Type'] = 'application/json';
+      request.body = jsonEncode({
+        'messages': [
+          {"role": "user", "content": prompt}
+        ],
+        'max_tokens': 4097,
+        'temperature': 1.0,
+        'stream': true
+      });
       
-      await for (var chunk in streamedResponse.stream.transform<String>(utf8.decoder)) {
-        final lines = chunk.split('\n');
+      final streamedResponse = await request.send();
+      
+      if (streamedResponse.statusCode == 200) {
+        String buffer = "";
         
-        for (final line in lines) {
-          // Check for the [DONE] marker which indicates the end of the stream
-          if (line.trim() == '[DONE]') {
-            // This signals the end of the stream
-            continue;
-          }
+        await for (var chunk in streamedResponse.stream.transform<String>(utf8.decoder)) {
+          final lines = chunk.split('\n');
           
-          if (line.startsWith('data: ')) {
-            final jsonString = line.substring(6).trim();
-            if (jsonString.isNotEmpty) {
-              try {
-                final jsonData = jsonDecode(jsonString);
-                final delta = jsonData['choices'][0]['delta'];
-                // Some APIs might not include 'content' in all chunks
-                final word = delta.containsKey('content') ? delta['content'] : '';
-                
-                if (word != null && word.isNotEmpty) {
-                  buffer += word;
-                  if (word.endsWith(" ") || word.endsWith("\n")) {
-                    yield buffer.trim();
-                    buffer = "";
+          for (final line in lines) {
+            if (line.trim() == '[DONE]') {
+              continue;
+            }
+            
+            if (line.startsWith('data: ')) {
+              final jsonString = line.substring(6).trim();
+              if (jsonString.isNotEmpty) {
+                try {
+                  final jsonData = jsonDecode(jsonString);
+                  final delta = jsonData['choices'][0]['delta'];
+                  // Some APIs might not include 'content' in all chunks
+                  final word = delta.containsKey('content') ? delta['content'] : '';
+                  
+                  if (word != null && word.isNotEmpty) {
+                    buffer += word;
+                    if (word.endsWith(" ") || word.endsWith("\n")) {
+                      yield buffer.trim();
+                      buffer = "";
+                    }
                   }
+                } catch (e) {
+                  print('Failed to parse JSON: $e');
                 }
-              } catch (e) {
-                print('Failed to parse JSON: $e');
               }
             }
           }
         }
+        
+        if (buffer.isNotEmpty) {
+          yield buffer.trim();
+        }
+      } else {
+        throw HttpException('HTTP error ${streamedResponse.statusCode}');
       }
-      
-      if (buffer.isNotEmpty) {
-        yield buffer.trim();
-      }
-    } else {
-      throw HttpException('HTTP error ${streamedResponse.statusCode}');
+    } catch (e) {
+      yield "Error: $e";
     }
-  } catch (e) {
-    yield "Error: $e";
   }
-}
 
   Future<Process?> startModel(String model, String modelPath) async {
     String? build = dotenv.env['LLAMA_PATH'];

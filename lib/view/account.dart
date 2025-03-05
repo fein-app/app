@@ -1,5 +1,7 @@
+import 'package:fein_app/fein.dart';
 import 'package:fein_app/states/model_state.dart';
 import 'package:fein_app/store/models_store.dart';
+import 'package:fein_app/view/account/download_progress_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -39,12 +41,12 @@ class Account extends StatelessWidget {
                   } else if (snapshot.hasError) {
                     return Center(child: Text('Error: ${snapshot.error}'));
                   } else if (snapshot.hasData) {
-                    List<String> models = snapshot.data!;
+                    List<Model> models = snapshot.data!;
                     return ListView.separated(
                       itemCount: models.length,
                       separatorBuilder: (context, index) => SizedBox(height: 10), // Add spacing between items
                       itemBuilder: (context, index) {
-                        String model = models[index];
+                        String model = models[index].name;
                         return Container(
                           decoration: BoxDecoration(
                             color: Color(0xFF101010),
@@ -56,27 +58,32 @@ class Account extends StatelessWidget {
                           ),
                           child: Padding(
                             padding: EdgeInsets.only(left: 15, top: 10, right: 15, bottom: 10),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            child: Column(
                               children: [
-                                Text(model),
-                                TextButton(
-                                  style: TextButton.styleFrom(
-                                    backgroundColor: Color(0x00000000),
-                                    side: BorderSide(
-                                      width: 1.0,
-                                      color: Color(0xFF2c2c2c)
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(model),
+                                    TextButton(
+                                      style: TextButton.styleFrom(
+                                        backgroundColor: Color(0x00000000),
+                                        side: BorderSide(
+                                          width: 1.0,
+                                          color: Color(0xFF2c2c2c)
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(30),
+                                        ),
+                                        padding: EdgeInsets.symmetric(horizontal: 32.0, vertical: 20.0)
+                                      ),
+                                      onPressed: () => modelState.removeModelFromCurrentModels(model),
+                                      child: Text("Delete", style: TextStyle(color: Colors.white),)
                                     ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(30),
-                                    ),
-                                    padding: EdgeInsets.symmetric(horizontal: 32.0, vertical: 20.0)
-                                  ),
-                                  onPressed: () => modelState.removeModelFromCurrentModels(model),
-                                  child: Text("Delete", style: TextStyle(color: Colors.white),)
+                                  ],
                                 ),
+                                DownloadProgressBar(model: models[index]),
                               ],
-                            ),
+                            )  
                           ),
                         );
                       },
@@ -91,9 +98,5 @@ class Account extends StatelessWidget {
         ),
       ),
     );
-
-    
   }
-
-  
 }

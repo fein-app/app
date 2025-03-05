@@ -37,7 +37,7 @@ class _MainAppState extends State<MainApp> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final modelState = Provider.of<ModelState>(context, listen: false);
-      await modelState.changeModel(modelState.currentModel);
+      await modelState.changeModel(modelState.currentModel.name);
     });
   }
 

@@ -1,6 +1,8 @@
 import 'package:fein_app/fein.dart';
+import 'package:fein_app/states/model_state.dart';
 import 'package:fein_app/store/models_store.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class SearchModel extends StatefulWidget {
   final HuggingFaceModel huggingFaceModel;
@@ -13,10 +15,12 @@ class SearchModel extends StatefulWidget {
 
 
 class _HoverEffectModelState extends State<SearchModel> {
-  bool isHovered = false; // Hover state
+  bool isHovered = false;
 
   @override
   Widget build(BuildContext context) {
+    ModelState modelProvider = Provider.of<ModelState>(context);
+  
     return SizedBox(
       width: double.infinity,
       child: MouseRegion(
@@ -89,9 +93,7 @@ class _HoverEffectModelState extends State<SearchModel> {
                         ),
                         padding: EdgeInsets.symmetric(horizontal: 32.0, vertical: 20.0)
                       ),
-                      onPressed: () => _handleDownload(
-                          _getNameFromID(widget.huggingFaceModel.modelId),
-                          widget.huggingFaceModel.modelId),
+                      onPressed: () => modelProvider.createModel(_getNameFromID(widget.huggingFaceModel.modelId), widget.huggingFaceModel.modelId),
                       child: Text("Download", style: TextStyle(color: Colors.white),),
                     ),
                   ],
@@ -109,7 +111,4 @@ class _HoverEffectModelState extends State<SearchModel> {
     return parts[1]; 
   }
 
-  void _handleDownload(String name, String repoID) async {
-    await ModelsStore().createModel(name, repoID);  
-  }
 }

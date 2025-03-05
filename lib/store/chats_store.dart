@@ -51,7 +51,8 @@ class ChatsStore {
 
   Future<void> createChat(String filename, String model) async {
     Directory dir = await getApplicationSupportDirectory();
-    String filepath = '${dir.path}/$model/chats/$filename'; // Ensure filename is included
+    String filepath = '${dir.path}/$model/chats/$filename';
+    print(filepath);
     final file = File(filepath);
     
     if (!(await file.exists())) {

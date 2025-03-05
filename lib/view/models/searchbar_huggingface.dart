@@ -9,7 +9,7 @@ class SearchbarHuggingface extends StatelessWidget {
   Widget build(BuildContext context) {    
     return SearchBar(
       backgroundColor: WidgetStateProperty.all(Color(0xFF2c2c2c)),
-      hintText: 'Search for LLMs ...',
+      hintText: 'Search for models on Huggingface ...',
       onSubmitted: (value) {
         onSubmitted(value);
       },

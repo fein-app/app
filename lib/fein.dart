@@ -1,15 +1,29 @@
+import 'package:http/http.dart';
+
 class Message {
   bool sender;
   DateTime date;
   String message;
+  String think;
 
-  Message({required this.sender, required this.date, required this.message});
+  Message({required this.sender, required this.date, required this.message, required this.think});
 
   factory Message.fromJSON(Map<String, dynamic> json) {
     return Message(
       sender: json['sender'],
       date: DateTime.parse(json['date']), 
-      message: json['message']);
+      message: json['message'],
+      think: json['think']);
+  }
+
+  factory Message.fromBuffer(String buffer) {
+    List<String> processed = Message.processThinkTags(buffer);
+    return Message(
+      sender: false,
+      date: DateTime.now(),
+      message: processed[0], 
+      think: processed[1],
+    );
   }
 
   Map<String, dynamic> toJSON() {
@@ -17,7 +31,33 @@ class Message {
       'sender': sender,
       'date': date.toIso8601String(),
       'message': message,
+      'think': think,
     };
+  }
+
+  static List<String> processThinkTags(String content) {
+    List<String> result = ["", ""]; // Ensure two elements exist
+    RegExp exp = RegExp(r'<think>(.*?)</think>', dotAll: true);
+    
+    if (!exp.hasMatch(content)) {
+      result[1] = content;
+      return result;
+    }
+    
+    int currentPosition = 0;
+    for (Match match in exp.allMatches(content)) {
+      if (match.start > currentPosition) {
+        result[0] += content.substring(currentPosition, match.start); 
+      }
+      result[1] += match.group(1) ?? ''; 
+      currentPosition = match.end;
+    }
+    
+    if (currentPosition < content.length) {
+      result[0] += content.substring(currentPosition);
+    }
+    
+    return result;
   }
 }
 
@@ -51,4 +91,12 @@ class HuggingFaceModel {
       modelId: json['modelId'] ?? "",
     );
   }
+}
+
+class Model {
+  final String name;
+  final bool downloaded;
+  final Stream<double>? downloadStream;
+
+  Model({required this.name, required this.downloaded, this.downloadStream});
 }

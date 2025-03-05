@@ -21,7 +21,7 @@ class ModelScreen extends StatelessWidget {
 
       body: Center(
         child: SizedBox(
-          width: MediaQuery.of(context).size.width * 0.75, // 70% of screen width
+          width: double.infinity, // 70% of screen width
           child: Column(
             children: [
               SizedBox(
@@ -57,10 +57,33 @@ class ModelScreen extends StatelessWidget {
                   }
                 }
               ),
+
+              Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                    top: BorderSide(
+                      color: Color(0xFF2c2c2c), // Change to your desired color
+                      width: 1.0, // Thickness of the border
+                    ),
+                  ),
+                ),
+                width: double.infinity,
+                child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start, // Aligns content to the left
+                    children: [
+                      Text("- Please make sure on HuggingFace that you do not install malicious software"),
+                      Text("- The app can only run models .gguf format. (We are working on more formats)"),
+                      Text("- You can check your download status under Home > Account"),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
       ),
-          );
+    );
   }
 }

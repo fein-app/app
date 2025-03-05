@@ -37,7 +37,7 @@ class _HomeState extends State<Home> {
               isDrawerOpen: isDrawerOpen,
               onMenuPressed: () {
                 setState(() {
-                  isDrawerOpen = !isDrawerOpen; // Toggle the drawer state
+                  isDrawerOpen = !isDrawerOpen;
                 });
               },
             ),

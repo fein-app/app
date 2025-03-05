@@ -7,16 +7,17 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ModelsStore {
-  Future<List<String>> getModels() async {
+  Future<List<Model>> getModels() async {
     Directory dir = await getApplicationSupportDirectory();
     
     List<FileSystemEntity> entities = dir.listSync();
-    List<String> modelNames = [];
+    List<Model> modelNames = [];
 
     for (var entity in entities) {  
       if (entity is Directory) {  
         String dirName = path.basename(entity.path);
-        modelNames.add(dirName);
+        bool downloaded = await checkDownloadStatus(dirName);
+        modelNames.add(Model(name: dirName, downloaded: downloaded));
       } 
     }
 
@@ -42,18 +43,31 @@ class ModelsStore {
     return ggufFiles.isNotEmpty ? ggufFiles.first.path : null;
   }
 
-  Future<void> createModel(String name, String repoID) async {
+  Stream<double> createModel(String name, String repoID, {int bufferSize = 1024 * 1024}) async* {
     Directory dir = await getApplicationSupportDirectory();
     Directory newDir = Directory('${dir.path}/$name');
     Directory chatsSubdir = Directory('${dir.path}/$name/chats');
-
+    
     if (!(await newDir.exists())) {
       await newDir.create();
       await chatsSubdir.create();
-    } 
-
-    await downloadModelFiles(name, repoID, "");
-
+    }
+    
+    Stream<List<DownloadProgress>> stream = downloadModelFiles(name, repoID, "", bufferSize: bufferSize);
+    
+    await for (List<DownloadProgress> downloads in stream) {
+      double fullContentSize = 0;
+      double allStreamedBytes = 0;
+      
+      for (DownloadProgress download in downloads) {
+        fullContentSize += download.contentSize;
+        allStreamedBytes += download.streamedBytes;
+      }
+      
+      yield fullContentSize > 0
+        ? allStreamedBytes / fullContentSize
+        : 0.0;
+    }
   }
 
   Future<void> deleteModel(String name) async {
@@ -91,94 +105,123 @@ class ModelsStore {
     }
   }
 
+  Future<bool> checkDownloadStatus(String modelName) async {
+    Directory dir = await getApplicationSupportDirectory();
+    final String modelDir = '${dir.path}/$modelName';
+    final File finishedFile = File('$modelDir/finished.txt');
+    
+    // Check if the finished.txt file exists
+    return await finishedFile.exists();
+  }
   
-  Future<void> downloadModelFiles(String name, String repoID, String directory) async {
+  Stream<List<DownloadProgress>> downloadModelFiles(
+    String name, 
+    String repoID, 
+    String directory, 
+    {int bufferSize = 1024 * 1024}  // 1 MB buffer by default
+  ) async* {
     Directory localDir = await getApplicationSupportDirectory();
     final listURL = Uri.parse('https://huggingface.co/api/models/$repoID/tree/main/$directory');
-    final baseURl = 'https://huggingface.co/$repoID/resolve/main';
-
-    print(listURL);
-
+    final baseURL = 'https://huggingface.co/$repoID/resolve/main';
+    
+    List<DownloadProgress> allDownloads = [];
+    
     try {
       final response = await http.get(listURL);
-      print(response);
-
+      
       if (response.statusCode == 200) {
         final List<dynamic> jsonResponse = jsonDecode(response.body);
-        print(jsonResponse);
-
+        
         final filePaths = jsonResponse
-            .where((item) => item['type'] == 'file')
-            .map((item) => item['path'] as String)
-            .toList();
-
+          .where((item) => item['type'] == 'file')
+          .map((item) => item['path'] as String)
+          .toList();
+        
         final dirPaths = jsonResponse
-            .where((item) => item['type'] == 'directory')
-            .map((item) => item['path'] as String)
-            .toList();
-
-        // Download files in the current directory
-        for (final path in filePaths) {
-          final savePath = '${localDir.path}/$name/$path';
-          Uri downloadURL = Uri.parse('$baseURl/$path');
-          print('Download URL: $downloadURL');
-
-          await downloadFile(downloadURL, savePath);
-        }
-
+          .where((item) => item['type'] == 'directory')
+          .map((item) => item['path'] as String)
+          .toList();
+        
         // Recursively download files in subdirectories
         for (final dirPath in dirPaths) {
-          await downloadModelFiles(name, repoID, dirPath);
+          await for (var subDirDownloads in downloadModelFiles(name, repoID, dirPath, bufferSize: bufferSize)) {
+            allDownloads.addAll(subDirDownloads);
+          }
+        }
+        
+        // Download files
+        for (final path in filePaths) {
+          final savePath = '${localDir.path}/$name/$path';
+          Uri downloadURL = Uri.parse('$baseURL/$path');
+          
+          await for (var progress in downloadFile(downloadURL, savePath, bufferSize: bufferSize)) {
+            allDownloads.add(progress);
+            yield allDownloads;
+          }
         }
       } else {
-        print("Failed to fetch data: ${response.statusCode}");
+        throw Exception("Failed to fetch data: ${response.statusCode}");
       }
     } catch (e) {
-      print('Error downloading file: $e');
+      throw Exception('Error downloading file: $e');
+    } finally {
+      try {
+        final String folderPath = '${localDir.path}/$name';
+        final Directory folder = Directory(folderPath);
+        
+        if (!await folder.exists()) {
+          await folder.create(recursive: true);
+        }
+        
+        final File finishedFile = File('$folderPath/finished.txt');
+        await finishedFile.writeAsString('Download completed at ${DateTime.now().toIso8601String()}');
+      } catch (e) {
+        throw Exception('Error creating finished.txt file: $e');
+      }
     }
   }
 
-  Future<void> downloadFile(Uri url, String savePath) async {
+
+  Stream<DownloadProgress> downloadFile(Uri url, String savePath, {int bufferSize = 1024 * 1024}) async* {
     final request = http.Request('GET', url);
     final streamedResponse = await request.send();
-
+    
     if (streamedResponse.statusCode == 200) {
-      // Get the total file size (if available)
-      final contentLength = streamedResponse.contentLength;
+      final contentLength = streamedResponse.contentLength ?? 0;
       final file = File(savePath);
       final sink = file.openWrite();
-
+      
       int bytesDownloaded = 0;
-
-      // Listen to the stream and write to the file
-      streamedResponse.stream.listen(
-        (List<int> chunk) {
-          // Write the chunk to the file
-          sink.add(chunk);
-
-          // Update the progress
-          bytesDownloaded += chunk.length;
-          if (contentLength != null) {
-            final progress = (bytesDownloaded / contentLength * 100).toStringAsFixed(2);
-            print('Download progress: $progress% ($bytesDownloaded/$contentLength bytes)');
-          } else {
-            print('Downloaded $bytesDownloaded bytes');
-          }
-        },
-        onDone: () {
-          // Close the file
-          sink.close();
-          print('Download completed: $savePath');
-        },
-        onError: (error) {
-          // Handle errors
-          sink.close();
-          print('Download failed: $error');
-        },
-        cancelOnError: true,
-      );
+      List<int> buffer = [];
+      
+      await for (var chunk in streamedResponse.stream) {
+        buffer.addAll(chunk);
+        
+        while (buffer.length >= bufferSize) {
+          sink.add(buffer.sublist(0, bufferSize));
+          buffer = buffer.sublist(bufferSize);
+          bytesDownloaded += bufferSize;
+          
+          yield DownloadProgress(
+            contentSize: contentLength,
+            streamedBytes: bytesDownloaded
+          );
+        }
+      }
+      
+      if (buffer.isNotEmpty) {
+        sink.add(buffer);
+        bytesDownloaded += buffer.length;
+        
+        yield DownloadProgress(
+          contentSize: contentLength,
+          streamedBytes: bytesDownloaded
+        );
+      }
+      
+      await sink.close();
     } else {
-      print('Failed to download: ${streamedResponse.statusCode}');
+      throw Exception('Failed to download: ${streamedResponse.statusCode}');
     }
   }
 
@@ -203,4 +246,10 @@ class ModelsStore {
       return null;
     }
   }
+}
+class DownloadProgress {
+  final int contentSize;
+  final int streamedBytes;
+
+  DownloadProgress({required this.contentSize, required this.streamedBytes});
 }

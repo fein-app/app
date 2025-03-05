@@ -33,10 +33,10 @@
                   onSubmitted: (value) async {
                     String newChatName = '${value.split(' ').take(3).toList().join(' ')}...';
 
-                    await chatProvider.createChat(currModel.currentModel, newChatName);
-                    await chatProvider.changeChat(currModel.currentModel, newChatName);
-                    await chatProvider.appendMessage(currModel.currentModel, Message(sender: true, date: DateTime.now(), message: value));
-                    await chatProvider.generateResponse(currModel.currentModel, currModel.currentUri, value);
+                    await chatProvider.createChat(currModel.currentModel.name, newChatName);
+                    await chatProvider.changeChat(currModel.currentModel.name, newChatName);
+                    await chatProvider.appendMessage(currModel.currentModel.name, Message(sender: true, date: DateTime.now(), message: value, think: ""));
+                    await chatProvider.generateResponse(currModel.currentModel.name, currModel.currentUri, value);
                   },
                 ), 
               ],
@@ -53,8 +53,8 @@
             // Fixed QuestionBar at the bottom
             QuestionBar(
               onSubmitted: (value) async {
-                await chatProvider.appendMessage(currModel.currentModel, Message(sender: true, date: DateTime.now(), message: value));
-                chatProvider.generateResponse(currModel.currentModel, currModel.currentUri, value);
+                await chatProvider.appendMessage(currModel.currentModel.name, Message(sender: true, date: DateTime.now(), message: value, think: ""));
+                chatProvider.generateResponse(currModel.currentModel.name, currModel.currentUri, value);
               },
             ),
           ],
