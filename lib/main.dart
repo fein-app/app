@@ -1,22 +1,19 @@
-import 'dart:typed_data';
-
 import 'package:fein_app/fein.dart';
 import 'package:fein_app/states/chat_state.dart';
 import 'package:fein_app/states/internet_state.dart';
 import 'package:fein_app/states/model_state.dart';
 import 'package:fein_app/states/search_state.dart';
-import 'package:fein_app/store/models_store.dart';
 import 'package:fein_app/view/models.dart';
 import 'package:flutter/material.dart';
 import 'package:fein_app/view/home.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:io';
-
+import 'package:window_manager/window_manager.dart';
 void main() async {
   await dotenv.load(fileName: ".env");
+  await windowManager.ensureInitialized();
+  await windowManager.setTitle('FEiN');
 
   runApp(
     MultiProvider(

@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=FEiN
-Exec=/usr/bin/launcher.sh
-Icon=FEiN
+Exec=/usr/bin/fein
+Icon=Icon.png
 Type=Application
 Categories=Utility;
