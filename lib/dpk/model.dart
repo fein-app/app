@@ -1,3 +1,5 @@
+import 'dart:ui';
+import 'package:path/path.dart' as path;
 import 'package:fein_app/fein.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -69,10 +71,10 @@ class ModelExecUtils {
   }
 
   Future<Process?> startModel(String model, String modelPath) async {
-    String? build = dotenv.env['LLAMA_PATH'];
-    if (build == null) print("Llama path not found");
-    
-    String llamaDir = build!.replaceFirst('/llama-server', '');
+    String appDir = Platform.resolvedExecutable;
+    print(appDir);
+    String llamaDir = path.dirname(appDir) + '\\llama-b4854-bin-win-avx2-x64';
+    String build = llamaDir + '\llama-server.exe';
 
     try {
       // Start the llama-server process

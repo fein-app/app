@@ -20,7 +20,11 @@ class ModelState extends ChangeNotifier {
   Future<void> _initialize() async {
     currentModels = await ModelsStore().getModels();
     currentModel = currentModels[0];
-    if (currentModel.downloaded) currentModelPath = await ModelsStore().getOneModelFile(currentModel.name);
+    if (currentModel.downloaded)  {
+      currentModelPath = await ModelsStore().getOneModelFile(currentModel.name);
+    } else {
+      currentModelPath = "";
+    }
     _setUpProcess();
     notifyListeners();
   }
@@ -29,6 +33,7 @@ class ModelState extends ChangeNotifier {
     currentRunningModel?.kill();
 
     try {
+      print(currentModelPath);
       Process? process = await ModelExecUtils().startModel(currentModel.name, currentModelPath!);
       currentRunningModel = process;
     } catch (e) {
