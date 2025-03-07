@@ -1,4 +1,5 @@
-  import 'dart:io';
+  import 'dart:async';
+import 'dart:io';
   import 'package:fein_app/dpk/model.dart';
   import 'package:fein_app/fein.dart';
   import 'package:fein_app/store/models_store.dart';
@@ -6,7 +7,7 @@
 
 
 class ModelState extends ChangeNotifier {
-  Model currentModel = Model(name: "DeepSeek-R1-Distill-Llama-8B-GGUF", downloaded: true);
+  Model currentModel = Model(name: "", downloaded: false);
   String? currentModelPath;
   Uri currentUri = Uri(scheme: 'http', host: '127.0.0.1', port: 8080, path: "v1/chat/completions");
   Process? currentRunningModel;
@@ -18,8 +19,9 @@ class ModelState extends ChangeNotifier {
 
   Future<void> _initialize() async {
     currentModels = await ModelsStore().getModels();
-    currentModelPath = await ModelsStore().getOneModelFile(currentModel.name);
-
+    currentModel = currentModels[0];
+    if (currentModel.downloaded) currentModelPath = await ModelsStore().getOneModelFile(currentModel.name);
+    _setUpProcess();
     notifyListeners();
   }
 
@@ -37,7 +39,7 @@ class ModelState extends ChangeNotifier {
   Future<void> changeModel(String name) async {
     bool downloaded = await ModelsStore().checkDownloadStatus(name);
     currentModel = Model(name: name, downloaded: downloaded);
-    await ModelsStore().getOneModelFile(name);
+    currentModelPath = await ModelsStore().getOneModelFile(name);
     await _setUpProcess();
     notifyListeners();
   }
@@ -55,42 +57,39 @@ class ModelState extends ChangeNotifier {
   Future<void> appendModelToCurrentModels(String model, String modelId) async {
     bool downloaded = await ModelsStore().checkDownloadStatus(model);
     currentModels.add(Model(name: model, downloaded: downloaded));
-    
-    await ModelsStore().createModel(model, modelId);
+    ModelsStore().createModel(model, modelId);
 
     notifyListeners();
   }
 
   Future<void> createModel(String name, String modelID) async {
-    Stream<double> downloadStream = ModelsStore().createModel(name, modelID);
-    
-    currentModels.add(
-      Model(
-        name: name, 
-        downloaded: false,
-        downloadStream: downloadStream
-      )
-    );
+    try {
+      final controller = StreamController<double>.broadcast();
+      final downloadStream = controller.stream;
 
-    downloadStream.listen(
-      (double progress) {},
-      onDone: () {
-        // Find the model in the list and update its `downloaded` status
-        final modelIndex = currentModels.indexWhere((m) => m.name == name);
-        if (modelIndex != -1) {
-          final updatedModel = Model(
-            name: name,
-            downloaded: true, 
-            downloadStream: null, 
-          );
+      Model newModel = Model(
+          name: name,
+          downloaded: false,
+          downloadStream: downloadStream,
+      );
+      
+      currentModels.add(newModel);
 
-          currentModels[modelIndex] = updatedModel;
-        }
-      },
-      onError: (error) {
-        // Handle errors (optional)
-        print("Download error: $error");
-      },
-    );
+      if (currentModels.length == 1) currentModel = newModel;
+
+      notifyListeners();
+
+      await for (var progress in ModelsStore().createModel(name, modelID)) {
+        controller.add(progress);  
+        print(progress);
+      }
+      
+      await controller.close();
+    } catch (e) {
+      print('Error during download: $e');
+    } finally {
+      _setUpProcess();
+    }
+
   }
 }

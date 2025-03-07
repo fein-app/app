@@ -1,7 +1,6 @@
 import 'package:fein_app/states/chat_state.dart';
 import 'package:fein_app/view/home/home_content/chat/ToggleTextField/toggle_text_field.dart';
 import 'package:flutter/material.dart';
-import 'package:path/path.dart';
 import 'package:provider/provider.dart';
 
 class Messages extends StatelessWidget {

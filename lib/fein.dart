@@ -1,4 +1,3 @@
-import 'package:http/http.dart';
 
 class Message {
   bool sender;
@@ -28,10 +27,17 @@ class Message {
 
   Map<String, dynamic> toJSON() {
     return {
-      'sender': sender,
+      'sender': sender ? 'user' : 'system',
       'date': date.toIso8601String(),
       'message': message,
       'think': think,
+    };
+  }
+
+  Map<String, String> toAPIFormat() {
+    return {
+      "role": sender ? "user" : "assistant",
+      "content": message
     };
   }
 

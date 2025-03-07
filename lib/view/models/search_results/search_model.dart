@@ -1,6 +1,5 @@
 import 'package:fein_app/fein.dart';
 import 'package:fein_app/states/model_state.dart';
-import 'package:fein_app/store/models_store.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

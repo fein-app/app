@@ -8,13 +8,13 @@ import 'dart:async';
 class ModelExecUtils {
 
   Stream<String> generateResponse(Uri uri, List<Message> messages, String prompt) async* {
+    List<Map<String, String>> apiMessages = messages.map((message) => message.toAPIFormat()).toList();
+
     try {
       final request = http.Request('POST', uri);
       request.headers['Content-Type'] = 'application/json';
       request.body = jsonEncode({
-        'messages': [
-          {"role": "user", "content": prompt}
-        ],
+        'messages': apiMessages,
         'max_tokens': 4097,
         'temperature': 1.0,
         'stream': true
@@ -84,16 +84,6 @@ class ModelExecUtils {
           "LD_LIBRARY_PATH": llamaDir, // Add the directory to LD_LIBRARY_PATH
         },
       );
-
-      // Listen to the stdout of the process and print the output line by line
-      runningModel.stdout.transform(utf8.decoder).listen((data) {
-        print('stdout: $data');
-      });
-
-      // Optionally, handle stderr for any error messagess
-      runningModel.stderr.transform(utf8.decoder).listen((data) {
-        print('stderr: $data');
-      });
 
       return runningModel;
     } catch (e) {

@@ -25,7 +25,7 @@
               mainAxisAlignment: MainAxisAlignment.center, // Align children to the bottom
               crossAxisAlignment: CrossAxisAlignment.center, // Center horizontally
               children: [
-                Text("Hi, I'm ${currModel.currentModel}.", style: TextStyle(fontSize: 28),),
+                Text("Hi, I'm ${currModel.currentModel.name}.", style: TextStyle(fontSize: 28),),
                 SizedBox(height: 10),
                 Text("How can I help you today?", style: TextStyle(fontSize: 16),),
                 SizedBox(height: 20),

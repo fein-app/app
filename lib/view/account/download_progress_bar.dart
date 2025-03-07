@@ -18,28 +18,50 @@ class DownloadProgressBar extends StatelessWidget {
         builder: (context, snapshot) {
           final double progress = snapshot.data ?? 0.0;
           
-          return Container(
-            width: double.infinity,
-            height: 2,
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-            ),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: progress,
-              child: Container(
-                color: Colors.blue,
+
+          return Row(
+            children: [
+              Text("Downloading", style: TextStyle(color: Color(0xFFA0A0A0)),),
+                            SizedBox(
+                width: 10,
               ),
-            ),
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  height: 2,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                  ),
+                  child: FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: progress,
+                    child: Container(
+                      color: Colors.blue,
+                    ),
+                  ),
+                )
+              )
+            ],
           );
+      
         },
       );
     } else {
-      return Container(
-        width: double.infinity,
-        height: 2,
-        color: model.downloaded ? Color(0xFF00FF00) : Color(0xFFFF0000)
-      );
+          return Row(
+            children: [
+              Text(model.downloaded ? "Downloaded" : "Failed Download", style: TextStyle(color: Color(0xFFA0A0A0)),),
+              SizedBox(
+                width: 10,
+              ),
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  height: 2,
+                  color: model.downloaded ? Color(0xFF00FF00) : Color(0xFFFF0000)
+                )
+              )
+            ],
+          );
     }
   }
 }
