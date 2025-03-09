@@ -15,6 +15,7 @@ class Sidebar extends StatelessWidget {
     Model model = context.watch<ModelState>().currentModel;
     String currChat = context.watch<ChatState>().currentChat;
     List<Model> currentModels = context.watch<ModelState>().currentModels;
+    final modelProvider = Provider.of<ModelState>(context);
     final chatProvider = Provider.of<ChatState>(context);
 
     return Drawer(
@@ -40,9 +41,10 @@ class Sidebar extends StatelessWidget {
                     textAlign: TextAlign.center, 
                   ),
                 ),
-                onChanged: (String? newValue) {
+                onChanged: (String? newValue) async {
                   if (newValue != null) {
-                    context.read<ModelState>().changeModel(newValue);
+                    await modelProvider.changeModel(newValue);
+                    await chatProvider.changeModel(newValue);
                   }
                 },
                 items: currentModels.map<DropdownMenuItem<String>>((model) {
@@ -68,8 +70,8 @@ class Sidebar extends StatelessWidget {
             Align(
               alignment: Alignment.centerLeft,
               child: ElevatedButton.icon(
-                onPressed: () {
-                  chatProvider.changeChat(model.name, "new");
+                onPressed: () async {
+                  await chatProvider.changeChat(model.name, "new");
                   chatProvider.killResponse();
                 },
                 style: ElevatedButton.styleFrom(
@@ -111,8 +113,9 @@ class Sidebar extends StatelessWidget {
                       minimumSize: const Size(double.infinity, 50),
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                     ),
-                    onPressed: () {
-                      chatProvider.changeChat(model.name, chat);
+                    onPressed: () async {
+                      await chatProvider.changeChat(model.name, chat);
+                      print(chatProvider.currentChat);
                       chatProvider.killResponse();
                     },
                     child: Row(

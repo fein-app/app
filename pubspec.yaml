@@ -31,3 +31,4 @@ flutter:
   uses-material-design: true
   assets:
     - .env
+    - lib/llama/llama-b4856-bin-ubuntu-x64/build/bin/

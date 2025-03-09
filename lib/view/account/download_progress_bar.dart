@@ -11,13 +11,12 @@ class DownloadProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (model.downloadStream != null) {
+    if (model.downloadStream != null ) {
       return StreamBuilder<double>(
         stream: model.downloadStream,
         initialData: 0.0,
         builder: (context, snapshot) {
           final double progress = snapshot.data ?? 0.0;
-          
 
           return Row(
             children: [

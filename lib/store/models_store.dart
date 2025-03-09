@@ -12,6 +12,7 @@ import 'dart:async';
 class ModelsStore {
   Future<List<Model>> getModels() async {
     Directory dir = await getApplicationSupportDirectory();
+    print(dir);
     
     List<FileSystemEntity> entities = dir.listSync();
     List<Model> modelNames = [];
@@ -48,6 +49,7 @@ class ModelsStore {
 
   Stream<double> createModel(String name, String repoID, {int bufferSize = 1024 * 1024}) async* {
     Directory dir = await getApplicationSupportDirectory();
+    print(dir);
     Directory newDir = Directory('${dir.path}/$name');
     Directory chatsSubdir = Directory('${dir.path}/$name/chats');
 
@@ -60,9 +62,9 @@ class ModelsStore {
       await for (var progress in ModelsStore().downloadModelFiles(name, repoID, "", bufferSize: 1024 * 1024)) {
       yield progress.streamedBytes / progress.contentSize;
     }
-  } catch (e) {
-    print('Error during download: $e');
-  }
+    } catch (e) {
+      print('Error during download: $e');
+    }
   }
 
   Stream<DownloadProgress> downloadModelFiles(
@@ -121,21 +123,25 @@ class ModelsStore {
         Map<String, DownloadProgress> progressMap = {};
         int totalContentSize = 0;
         int totalStreamedBytes = 0;
+        
         await for (var progress in progressStreamGroup.stream) {
-            if (!progressMap.containsKey(progress.file)) {
-              totalContentSize += progress.contentSize;            
-            }
-
+          if (!progressMap.containsKey(progress.file)) {
+            totalContentSize += progress.contentSize;
             progressMap[progress.file] = progress;
             totalStreamedBytes += progress.streamedBytes;
-
-            // Yield the combined progress
-            yield DownloadProgress(
-              contentSize: totalContentSize,
-              streamedBytes: totalStreamedBytes,
-              file: "",
-            );
+          } else {
+            DownloadProgress oldProgress = progressMap[progress.file]!;
+            int deltaBytes = progress.streamedBytes - oldProgress.streamedBytes;
+            totalStreamedBytes += deltaBytes;
+            progressMap[progress.file] = progress;
           }
+          
+          yield DownloadProgress(
+            contentSize: totalContentSize,
+            streamedBytes: totalStreamedBytes,
+            file: "", 
+          );
+        }
       } else {
         throw Exception("Failed to fetch data: ${response.statusCode}");
       }
@@ -143,20 +149,6 @@ class ModelsStore {
       throw Exception('Error downloading file: $e');
     } finally {
       progressStreamGroup.close();
-
-      try {
-        final String folderPath = '${localDir.path}/$modelName';
-        final Directory folder = Directory(folderPath);
-
-        if (!await folder.exists()) {
-          await folder.create(recursive: true);
-        }
-
-        final File finishedFile = File('$folderPath/finished.txt');
-        await finishedFile.writeAsString('Download completed at ${DateTime.now().toIso8601String()}');
-      } catch (e) {
-        throw Exception('Error creating finished.txt file: $e');
-      }
     }
   }
 
@@ -204,6 +196,24 @@ class ModelsStore {
       await sink.close();
     } else {
       throw Exception('Failed to download: ${streamedResponse.statusCode}');
+    }
+  }
+
+  Future<void> createFinishedFile(String modelName) async {
+    Directory localDir = await getApplicationSupportDirectory();
+    
+    try {
+      final String folderPath = '${localDir.path}/$modelName';
+      final Directory folder = Directory(folderPath);
+
+      if (!await folder.exists()) {
+        await folder.create(recursive: true);
+      }
+
+      final File finishedFile = File('$folderPath/finished.txt');
+      await finishedFile.writeAsString('Download completed at ${DateTime.now().toIso8601String()}');
+    } catch (e) {
+      throw Exception('Error creating finished.txt file: $e');
     }
   }
 

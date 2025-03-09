@@ -92,7 +92,50 @@ class _HoverEffectModelState extends State<SearchModel> {
                         ),
                         padding: EdgeInsets.symmetric(horizontal: 32.0, vertical: 20.0)
                       ),
-                      onPressed: () => modelProvider.createModel(_getNameFromID(widget.huggingFaceModel.modelId), widget.huggingFaceModel.modelId),
+                      onPressed: () {
+                        modelProvider.createModel(_getNameFromID(widget.huggingFaceModel.modelId), widget.huggingFaceModel.modelId);
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              backgroundColor: Color(0xFF1b1b1b),
+                              title: Text('Information'),
+                              content: SingleChildScrollView(
+                                child: Container(
+                                  color: Color(0xFF1b1b1b),
+                                  width: double.maxFinite,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text("${_getNameFromID(widget.huggingFaceModel.modelId)} is being downloaded"),
+                                      SizedBox(height: 8),
+                                      Text("- You can check your download status under Home > Account"),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  style: TextButton.styleFrom(
+                                    side: BorderSide(
+                                      width: 1.0,
+                                      color: Color(0xFF2c2c2c)
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
+                                    padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0)
+                                  ),
+                                  child: Text('OK', style: TextStyle(color: Colors.white, fontWeight: FontWeight.normal),),
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
                       child: Text("Download", style: TextStyle(color: Colors.white),),
                     ),
                   ],

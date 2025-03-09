@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:fein_app/dpk/model.dart';
+import 'package:fein_app/dpk/model_utils.dart';
 import 'package:fein_app/fein.dart';
 import 'package:fein_app/store/chats_store.dart';
 import 'package:flutter/material.dart';
@@ -8,24 +8,31 @@ class ChatState extends ChangeNotifier {
   String currentChat = "new";
   List<String> currentChats = [];
   List<Message> currentMessagesFromChat = [];
-  
   StreamController<String>? _responseController;
   Stream<String>? get currentResponse => _responseController?.stream;
+  final Completer<void> _initCompleter = Completer<void>();
+  Future<void> get initialized => _initCompleter.future;
   
   bool promptable = true;
   bool kill = false;
   
   ChatState() {
+    _initCompleter.complete();
     _initialize();
   }
   
   Future<void> _initialize() async {
-    currentChats = await ChatsStore().getChats("DeepSeek-R1-Distill-Llama-8B-GGUF");
     notifyListeners();
   }
   
   void killResponse() {
     if (!kill) kill = true;
+    notifyListeners();
+  }
+
+  Future<void> changeModel(String model) async {
+    currentChats = await ChatsStore().getChats(model);
+    currentChat = "new";
     notifyListeners();
   }
   
@@ -56,8 +63,10 @@ class ChatState extends ChangeNotifier {
   }
   
   Future<void> generateResponse(String model, Uri uri, String prompt) async {
+    if (!promptable) kill = true;
+
     if (promptable) {
-      if (kill) kill = true;
+      if (kill) kill = false;
       promptable = false;
       
       if (_responseController != null) {

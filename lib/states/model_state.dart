@@ -1,10 +1,10 @@
   import 'dart:async';
-import 'dart:io';
-  import 'package:fein_app/dpk/model.dart';
+  import 'dart:io';
+  import 'package:fein_app/dpk/model_utils.dart';
   import 'package:fein_app/fein.dart';
   import 'package:fein_app/store/models_store.dart';
   import 'package:flutter/material.dart';
-
+  import 'package:connectivity_plus/connectivity_plus.dart';
 
 class ModelState extends ChangeNotifier {
   Model currentModel = Model(name: "", downloaded: false);
@@ -12,6 +12,37 @@ class ModelState extends ChangeNotifier {
   Uri currentUri = Uri(scheme: 'http', host: '127.0.0.1', port: 8080, path: "v1/chat/completions");
   Process? currentRunningModel;
   List<Model> currentModels = [];
+  final Completer<void> _initCompleter = Completer<void>();
+  Future<void> get initialized => _initCompleter.future;
+  List<HuggingFaceModel> recommendedModels = [
+    HuggingFaceModel(
+      id: "unsloth/DeepSeek-R1-GGUF", 
+      author: "unsloth", 
+      likes: 974, 
+      trendingScore: 30,
+      downloads: 5106262, 
+      libraryName: "transformers",
+      modelId: "unsloth/DeepSeek-R1-GGUF",
+    ),
+    HuggingFaceModel(
+      id: "unsloth/DeepSeek-R1-Distill-Llama-8B-GGUF", 
+      author: "unsloth", 
+      likes: 244, 
+      trendingScore: 5,
+      downloads: 362622, 
+      libraryName: "transformers",
+      modelId: "unsloth/DeepSeek-R1-Distill-Llama-8B-GGUF",
+    ),
+    HuggingFaceModel(
+      id: "unsloth/DeepSeek-R1-Distill-Qwen-1.5B-GGUF", 
+      author: "unsloth", 
+      likes: 98, 
+      trendingScore: 3,
+      downloads: 312853, 
+      libraryName: "transformers",
+      modelId: "unsloth/DeepSeek-R1-Distill-Qwen-1.5B-GGUF",
+    ),
+  ];
 
   ModelState() {
     _initialize();
@@ -19,13 +50,18 @@ class ModelState extends ChangeNotifier {
 
   Future<void> _initialize() async {
     currentModels = await ModelsStore().getModels();
-    currentModel = currentModels[0];
+    if(currentModels.isNotEmpty) {
+      currentModel = currentModels[0];  
+    } else {
+      currentModel = Model(name: "", downloaded: false);
+    }
     if (currentModel.downloaded)  {
       currentModelPath = await ModelsStore().getOneModelFile(currentModel.name);
     } else {
       currentModelPath = "";
     }
     _setUpProcess();
+    _initCompleter.complete();
     notifyListeners();
   }
 
@@ -68,6 +104,7 @@ class ModelState extends ChangeNotifier {
   }
 
   Future<void> createModel(String name, String modelID) async {
+    if (currentModels.any((model) => model.name == name)) return;
     try {
       final controller = StreamController<double>.broadcast();
       final downloadStream = controller.stream;
@@ -77,24 +114,35 @@ class ModelState extends ChangeNotifier {
           downloaded: false,
           downloadStream: downloadStream,
       );
-      
-      currentModels.add(newModel);
 
-      if (currentModels.length == 1) currentModel = newModel;
+      currentModels.add(newModel);
+      if (currentModels.length == 1) changeModel(name);
 
       notifyListeners();
 
+      double? lastProgress;
+      DateTime? lastEmittedTime = DateTime.now();
       await for (var progress in ModelsStore().createModel(name, modelID)) {
         controller.add(progress);  
-        print(progress);
+
+        final timeSinceLastEmission = DateTime.now().difference(lastEmittedTime!);
+
+        if (timeSinceLastEmission.inMinutes >= 1) {
+          List<ConnectivityResult> connectivityResults = await Connectivity().checkConnectivity();
+          if (connectivityResults.contains(ConnectivityResult.none)) return; 
+          break;
+        }
       }
-      
+
+      ModelsStore().createFinishedFile(name);
       await controller.close();
+      currentModels.where((model) => model.name == newModel.name).forEach((model) {
+        model.downloadStream = null;
+      });
     } catch (e) {
       print('Error during download: $e');
     } finally {
       _setUpProcess();
     }
-
   }
 }

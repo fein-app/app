@@ -9,7 +9,7 @@ class Message {
 
   factory Message.fromJSON(Map<String, dynamic> json) {
     return Message(
-      sender: json['sender'],
+      sender: json['sender'] == "user" ? true : false,
       date: DateTime.parse(json['date']), 
       message: json['message'],
       think: json['think']);
@@ -102,7 +102,7 @@ class HuggingFaceModel {
 class Model {
   final String name;
   final bool downloaded;
-  final Stream<double>? downloadStream;
+  Stream<double>? downloadStream;
 
   Model({required this.name, required this.downloaded, this.downloadStream});
 }

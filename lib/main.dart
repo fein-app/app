@@ -15,11 +15,18 @@ void main() async {
   await windowManager.ensureInitialized();
   await windowManager.setTitle('FEiN');
 
+  final chatState = ChatState();
+  final modelState = ModelState();
+  await Future.wait([
+    chatState.initialized,
+    modelState.initialized,
+  ]);
+
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (context) => ChatState()),
-        ChangeNotifierProvider(create: (context) => ModelState()),
+        ChangeNotifierProvider.value(value: chatState),
+        ChangeNotifierProvider.value(value: modelState),
         ChangeNotifierProvider(create: (context) => InternetState()),
         ChangeNotifierProvider(create: (context) => SearchProvider()),
       ],
@@ -46,10 +53,8 @@ class _MainAppState extends State<MainApp> {
     bool isFirstLaunch = prefs.getBool('first_launch') ?? true;
     
     if (isFirstLaunch) {
-      // Set the flag to false for future launches
       await prefs.setBool('first_launch', false);
       
-      // Add a small delay to ensure context is available
       Future.delayed(Duration(milliseconds: 500), () {
         if (mounted) {
           _showInfoDialog(context);
@@ -105,9 +110,17 @@ class _MainAppState extends State<MainApp> {
     );
   }
 
+  bool first = false;
   @override
   Widget build(BuildContext context) {
+    print("reached");
     List<Model> currModels = context.watch<ModelState>().currentModels;
+    Model currModel = context.read<ModelState>().currentModel;
+    if (!first) {
+      Provider.of<ChatState>(context).changeModel(currModel.name);
+      first = true;
+    }
+
     return MaterialApp(
       title: 'FEiN',
       home: currModels.isNotEmpty ? Home() : ModelScreen(),
