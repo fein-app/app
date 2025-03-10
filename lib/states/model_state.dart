@@ -53,13 +53,14 @@ class ModelState extends ChangeNotifier {
     if(currentModels.isNotEmpty) {
       currentModel = currentModels[0];  
     } else {
-      currentModel = Model(name: "", downloaded: false);
+      currentModel = Model(name: "", downloaded: true);
     }
     if (currentModel.downloaded)  {
       currentModelPath = await ModelsStore().getOneModelFile(currentModel.name);
     } else {
       currentModelPath = "";
     }
+    print(currentModelPath);
     _setUpProcess();
     _initCompleter.complete();
     notifyListeners();
@@ -120,25 +121,30 @@ class ModelState extends ChangeNotifier {
 
       notifyListeners();
 
-      double? lastProgress;
-      DateTime? lastEmittedTime = DateTime.now();
+      bool timerStarted = false;
+      bool timerDone = false;
+      Timer? timer;
       await for (var progress in ModelsStore().createModel(name, modelID)) {
-        controller.add(progress);  
+        controller.add(progress);
 
-        final timeSinceLastEmission = DateTime.now().difference(lastEmittedTime!);
-
-        if (timeSinceLastEmission.inMinutes >= 1) {
-          List<ConnectivityResult> connectivityResults = await Connectivity().checkConnectivity();
-          if (connectivityResults.contains(ConnectivityResult.none)) return; 
-          break;
+        if (!timerStarted) {
+          timerStarted = true;
+          timer = Timer.periodic(Duration(minutes: 1), (Timer t) {
+            timerDone = true;
+          });
         }
+
+        if (timerDone && progress >= 1.0) break;
       }
 
-      ModelsStore().createFinishedFile(name);
+
+      await ModelsStore().createFinishedFile(name);
       await controller.close();
       currentModels.where((model) => model.name == newModel.name).forEach((model) {
         model.downloadStream = null;
       });
+
+      notifyListeners();
     } catch (e) {
       print('Error during download: $e');
     } finally {

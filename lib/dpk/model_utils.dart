@@ -74,7 +74,7 @@ class ModelExecUtils {
       String appDir = Platform.resolvedExecutable;
 
       // Define the llama-server directory and binary path
-      String llamaDir = '${path.dirname(appDir)}/data/flutter_assets/lib/llama/llama-b4854-bin-win-avx2-x64';
+      String llamaDir = '${path.dirname(appDir)}/data/flutter_assets/lib/llama/llama-b4856-bin-ubuntu-x64/build/bin';
       String build = '$llamaDir/llama-server';
 
       File file = File(build);
