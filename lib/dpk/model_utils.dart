@@ -72,10 +72,19 @@ class ModelExecUtils {
   Future<Process?> startModel(String model, String modelPath) async {
     try {
       String appDir = Platform.resolvedExecutable;
+      String llamaDir;
+      String build;
 
       // Define the llama-server directory and binary path
-      String llamaDir = '${path.dirname(appDir)}/data/flutter_assets/lib/llama/llama-b4856-bin-ubuntu-x64/build/bin';
-      String build = '$llamaDir/llama-server';
+      if (Platform.isLinux || Platform.isMacOS) {
+        llamaDir = '${path.dirname(appDir)}/data/flutter_assets/lib/llama/llama-b4856-bin-ubuntu-x64/build/bin'; 
+        build = '$llamaDir/llama-server';
+      } else if (Platform.isWindows) {
+        llamaDir = '${path.dirname(appDir)}\\data\\flutter_assets\\lib\\llama\\llama-b4854-bin-win-avx2-x64';
+        build = '$llamaDir\\llama-server.exe';
+      } else {
+        throw UnsupportedError("Unsupported platform");
+      }
 
       File file = File(build);
 
