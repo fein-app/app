@@ -10,19 +10,16 @@ import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
-import 'package:tray_manager/tray_manager.dart';
+import 'package:path/path.dart' as path;
 import 'dart:io';
 void main() async {
   await dotenv.load(fileName: ".env");
+  String appDir = Platform.resolvedExecutable;
   await windowManager.ensureInitialized();
   await windowManager.setTitle('FEiN');
-  String appDir = Platform.resolvedExecutable;
-
   if (Platform.isWindows) {
-    trayManager.setIcon('$appDir\\data\\flutter_assets\\Icon.ico');
-  } 
-
-  trayManager.setIcon('assets/icon.png');
+    await windowManager.setIcon('${path.dirname(appDir)}\\data\\flutter_assets\\Icon64.ico');
+  }
 
   final chatState = ChatState();
   final modelState = ModelState();

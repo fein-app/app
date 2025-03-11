@@ -34,4 +34,4 @@ flutter:
     - .env
     - lib/llama/llama-b4854-bin-win-avx2-x64/
     - lib/llama/llama-b4856-bin-ubuntu-x64/build/bin/
-    - Icon.ico
+    - Icon64.ico

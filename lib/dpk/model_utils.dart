@@ -107,14 +107,7 @@ class ModelExecUtils {
       );
 
       // Capture and print stdout
-      runningModel.stdout.transform(utf8.decoder).listen((String output) {
-        print("stdout: $output");
-      });
 
-      // Capture and print stderr
-      runningModel.stderr.transform(utf8.decoder).listen((String error) {
-        print("stderr: $error");
-      });
 
 
       return runningModel;
