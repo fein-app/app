@@ -18,13 +18,9 @@ void main() async {
   await windowManager.setTitle('FEiN');
   String appDir = Platform.resolvedExecutable;
 
-  if (Platform.isLinux || Platform.isMacOS) {
-    trayManager.setIcon('$appDir/data/flutter_assets/Icon.ico');
-  } else if (Platform.isWindows) {
+  if (Platform.isWindows) {
     trayManager.setIcon('$appDir\\data\\flutter_assets\\Icon.ico');
-  } else {
-    throw UnsupportedError("Unsupported platform");
-  }
+  } 
 
   trayManager.setIcon('assets/icon.png');
 

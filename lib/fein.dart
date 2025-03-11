@@ -101,7 +101,7 @@ class HuggingFaceModel {
 
 class Model {
   final String name;
-  final bool downloaded;
+  bool downloaded;
   Stream<double>? downloadStream;
 
   Model({required this.name, required this.downloaded, this.downloadStream});

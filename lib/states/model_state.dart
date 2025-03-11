@@ -141,6 +141,7 @@ class ModelState extends ChangeNotifier {
       await ModelsStore().createFinishedFile(name);
       await controller.close();
       currentModels.where((model) => model.name == newModel.name).forEach((model) {
+        model.downloaded = true;
         model.downloadStream = null;
       });
 
